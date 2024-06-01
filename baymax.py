@@ -124,6 +124,9 @@ def chats(description, system_info):
     for chunk in completion:
         response += chunk.choices[0].delta.content or ""
         print(chunk.choices[0].delta.content or "", end="")
+
+    engine.say(response)
+    engine.runAndWait()
     return response
 
 def sanitize_command(command):
@@ -174,8 +177,12 @@ def construct_command(base_command, description, system_info):
         stop=None,
     )
     if response['choices']:
+        engine.say(response['choices'][0]['message']['content'])
+        engine.runAndWait()
         return response['choices'][0]['message']['content']
     else:
+        engine.say("Failed to construct command")
+        engine.runAndWait()
         print("Failed to construct command.")
         return None
 
@@ -256,6 +263,9 @@ def main(user_input):
         return "No matching command found"
 
 def listen_for_hotword():
+    recognizer = sr.Recognizer()  # Initialize recognizer
+    microphone = sr.Microphone()  # Initialize microphone
+
     with microphone as source:
         print("Listening for hotword 'Baymax'...")
         recognizer.adjust_for_ambient_noise(source)
@@ -273,6 +283,7 @@ def listen_for_hotword():
         print(f"Could not request results; {e}")
 
     return False
+
 
 def get_voice_input():
     with microphone as source:
@@ -300,10 +311,11 @@ if __name__ == '__main__':
         print("Press any key to switch to text input mode, or wait for the hotword 'Baymax'...")
         
         # Listen for any key press
-        if keyboard.is_pressed():
+        if keyboard.read_event(suppress=True):
             user_input = input("\nBAYMAX: ")
             response = main(user_input)
             print(response)
+            respond_with_voice(response)
         else:
             if listen_for_hotword():
                 user_input = get_voice_input()
